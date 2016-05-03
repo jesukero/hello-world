@@ -1,0 +1,130 @@
+http://blog.naver.com/baeckwind18?Redirect=Log&logNo=168737250
+
+
+
+
+*************************************************************************************
+-- DB --
+
+CREATE OR REPLACE PACKAGE SCOTT.PACK02 AS
+    TYPE CUR_TYP IS REF CURSOR; -- CURSOR 선언
+    PROCEDURE BOARD_DETAIL_PROC(P_SEQ IN FREEBOARD.FREEBOARD_SEQ%TYPE, V_CUR OUT CUR_TYP);
+END PACK02;
+/ 
+
+CREATE OR REPLACE PACKAGE BODY SCOTT.PACK02 AS
+PROCEDURE BOARD_DETAIL_PROC(P_SEQ IN FREEBOARD.FREEBOARD_SEQ%TYPE, V_CUR OUT CUR_TYP)
+    IS
+    BEGIN
+        OPEN V_CUR FOR
+            SELECT 
+                FREEBOARD_SEQ, TITLE
+            FROM 
+                FREEBOARD 
+            WHERE FREEBOARD_SEQ = P_SEQ
+            AND USE_YN = 'Y';
+    END BOARD_DETAIL_PROC;
+END PACK02;
+/
+
+*************************************************************************************
+-- java --
+
+-- controller
+
+public ModelAndView BoardDetail(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+     Map map = new HashMap();
+     BoardDTO dto = new BoardDTO();
+     List list = null;
+     
+     String board_seq = Utility.setDefault(request.getParameter("seq"), "");
+     
+     System.out.println("BoardDetail board_seq = "+ board_seq);
+     
+     if(!board_seq.equals("")) {
+      int seq = Integer.parseInt(board_seq);
+      map.put("P_SEQ", seq);
+         list = new ArrayList(this.boardManager.getBoardDetail(map));
+         System.out.println("**************************** BoardDetail list = " + list.size());
+     }
+        
+        ModelAndView mav = new ModelAndView();
+  mav.addObject("list", list);
+  mav.setViewName("boardDetail");
+  
+  return mav;
+    }
+
+ 
+
+*************************************************************************************
+
+-- service
+
+public List getBoardDetail(Map map);
+
+ 
+
+*************************************************************************************
+
+-- serviceImpl
+
+public List getBoardDetail(Map map) {
+     return boardDao.getBoardDetail(map);
+}
+
+ 
+
+*************************************************************************************
+
+-- dao
+
+public List getBoardDetail(Map map);
+
+ 
+
+-- daoimpl
+
+public List<BoardDTO> getBoardDetail(Map map) {
+    return boardDao.getBoardDetail(map);
+}
+
+ 
+
+*************************************************************************************
+
+xml
+
+<!-- parameterMap setting -->
+ <parameterMap id="getBoardDetailSeq" class="java.util.Map">
+  <parameter property="P_SEQ" jdbcType="int" javaType="java.lang.Integer" mode="IN" />
+  <parameter property="V_CUR" jdbcType="ORACLECURSOR" javaType="java.sql.ResultSet" mode="OUT" />
+ </parameterMap>
+
+ 
+
+<!-- resultMap setting -->
+
+<resultMap id="getBoardDetailMap" class="Board">
+  <result property="freeboard_seq" column="freeboard_seq" />
+  <result property="title" column="title" />
+  <result property="content" column="content" />
+  <result property="reg_date" column="reg_date" />
+  <result property="writer" column="writer" />
+  <result property="filename" column="filename" />
+ </resultMap>
+
+ 
+
+<procedure id="getBoardDetail" parameterMap="getBoardDetailSeq" resultMap="getBoardDetailMap">
+  <![CDATA[
+  { CALL pack02.BOARD_DETAIL_PROC(?, ?) }
+  ]]>
+ </procedure>
+
+
+
+[출처] ibatis+spring PROCEDURE 를 이용해서 리스트를 뽑아쓰는 경우|작성자 춘
+
